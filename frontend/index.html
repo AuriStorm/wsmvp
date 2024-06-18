@@ -1,0 +1,134 @@
+<!doctype html>
+
+<script type="importmap">
+  {
+    "imports": {
+      "vue": "https://unpkg.com/vue@3.4.29/dist/vue.esm-browser.prod.js"
+    }
+  }
+</script>
+
+<script src="https://unpkg.com/centrifuge@5.2.0/dist/centrifuge.js"></script>
+
+<script type="module">
+  import { createApp, ref } from 'vue'
+
+  const BASE_BACKEND_API =ref(`http://localhost:8081`)
+  const GET_TOKEN_URI = `/centrifugo/subscribe/`
+
+  const CENTRIFUGO_DEFAULT_WS_CONNECTION_IRL = 'ws://127.0.0.1:8000/connection/websocket'
+
+
+  createApp({
+    setup() {
+      const centrifugo_token_resp = ref(null)
+      const curr_user_id = ref(null)
+      const ws_incoming_msgs_list = ref([])
+      const show_connected = ref(false)
+
+      const centrifuge = ref(null)
+      const sub = ref(null)
+      const namespace_sub = ref(null)
+
+      async function get_centrifugo_token_resp() {
+        const requestOptions = {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: curr_user_id.value,
+          })
+        }
+        centrifugo_token_resp.value = await ( await fetch(`${BASE_BACKEND_API.value}${GET_TOKEN_URI}`, requestOptions) ).json()
+      }
+
+      async function init_centrifugo_client() {
+        centrifuge.value = new Centrifuge(CENTRIFUGO_DEFAULT_WS_CONNECTION_IRL, {
+          token: centrifugo_token_resp.value.token,
+        });
+
+        show_connected.value = true;
+
+        // Allocate Subscription to a channel.
+        sub.value = centrifuge.value.newSubscription('space'); // so channel should named by space.uid or eny else specific thing
+        namespace_sub.value = centrifuge.value.newSubscription('streams:space');
+
+        // React on channel real-time publications.
+        sub.value.on('publication', function(ctx) {
+            ws_incoming_msgs_list.value.push(ctx.data);
+            console.log(ctx.data);
+        });
+
+        // Trigger subscribe process.
+        sub.value.subscribe();
+        namespace_sub.value.subscribe(); // First message always contains SubscribeRequest.
+
+        // Trigger actual connection establishement.
+        centrifuge.value.connect();
+      }
+
+      async function publish_from_client() {
+        namespace_sub.value.publish({"input": "hello from client"}).then(function() {
+              // success ack from Centrifugo received
+          }, function(err) {
+              // publish call failed with error
+              console.log(err);
+          });
+
+      }
+
+      return {
+        centrifugo_token_resp,
+        curr_user_id,
+        show_connected,
+        ws_incoming_msgs_list,
+        init_centrifugo_client,
+        get_centrifugo_token_resp,
+        publish_from_client,
+      }
+    }
+  }).mount('#app')
+</script>
+
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" type="image/x-icon" href="icons8-done.gif">
+</head>
+
+<style>
+  @import './styles.css';
+</style>
+
+<body>
+  <div id="app">
+    <img id="logo" src="motogopher.svg">
+    <div id="content">
+
+      <h1>ТЫКАЛКА В ЦЕНТРИФУГУ</h1>
+      <br>
+
+      <div id="cent_page">
+
+        <p><input v-model="curr_user_id" placeholder="тут user id/uid" /></p>
+
+        <p><button @click="get_centrifugo_token_resp">ПОЛУЧИТЬ ТОКЕН</button></p>
+        <p v-if="centrifugo_token_resp">
+          ответ ручки POST /centrifugo/subscribe/<br>
+          {{ centrifugo_token_resp }}
+          <br> токен был записан, теперь можно инитить клиент центрифуги
+        </p>
+
+        <p><button @click="init_centrifugo_client">ЗАИНИТИТЬ ЦЕНТРИФУГО</button></p>
+        <p v-if="show_connected"><button @click="publish_from_client">ОТПРАВИТЬ ПРИВЕТ С КЛИЕНТА</button></p>
+        <p v-if="show_connected">заиничено с юзером "{{ curr_user_id }}"</p>
+        <p v-if="show_connected">Полученный пейлоад:</p>
+        <ul v-if="ws_incoming_msgs_list">
+          <li v-for="item in ws_incoming_msgs_list">
+            {{ item }}
+          </li>
+        </ul>
+
+      </div>
+
+    </div>
+  </div>
+</body>

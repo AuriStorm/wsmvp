@@ -1,0 +1,49 @@
+services:
+
+  app:
+    container_name: backend-app
+    build:
+      context: ./
+      dockerfile: ./docker/backend/Dockerfile
+    env_file: "local_backend.env"
+    volumes:
+      - ./backend:/app
+    restart: always
+    ports:
+      - 8081:8081
+
+  streams:
+    # fully provided by https://github.com/centrifugal/examples/tree/master/v5/subscription_streams
+    container_name: backend-streams
+    build:
+      context: ./
+      dockerfile: ./docker/backend_streams/Dockerfile
+    env_file: "local_backend.env"
+    volumes:
+      - ./backend_streams:/app
+    restart: always
+    ports:
+      - 12000:12000
+
+  client:
+    container_name: frontend
+    build:
+      context: ./
+      dockerfile: ./docker/frontend/Dockerfile
+    restart: always
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend/index.html:/app/index.html
+
+  centrifugo:
+    container_name: centrifugo
+    build:
+      context: ./
+      dockerfile: ./docker/centrifugo/Dockerfile
+    ports:
+      - 8000:8000
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144

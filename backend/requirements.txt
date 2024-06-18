@@ -1,0 +1,7 @@
+fastapi
+pydantic
+pyjwt
+aiohttp
+cent
+grpcio
+grpcio-tools
