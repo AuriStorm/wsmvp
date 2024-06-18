@@ -4,6 +4,7 @@ backend<=>centrifugo<=>clients communication
 
 ## перед началом
 положить `centrifugo_config.json` в корневую директорию
+
 положить `local_backend.env` в корневую директорию
 
 
