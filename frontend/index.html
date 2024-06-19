@@ -155,7 +155,7 @@
             {{ item }}
           </li>
         </ul>
-        <p v-if="show_connected">Полученный пейлоад из стрима:</p>
+        <p v-if="show_connected">Полученный пейлоад из стрима (захардкожен в backend_streams):</p>
         <ul v-if="ws_incoming_msgs_stream_list">
           <li v-for="item in ws_incoming_msgs_stream_list">
             {{ item }}
