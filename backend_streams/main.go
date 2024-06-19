@@ -108,7 +108,9 @@ func (s *streamerServer) SubscribeBidirectional(
 		if err != nil {
 			return nil
 		}
-		pub := &pb.Publication{Data: []byte(`{"input": "` + cd.Input + `"}`)}
+		// pub := &pb.Publication{Data: []byte(`{"input": "` + cd.Input + `"}`)}
+		// stream.Send(&pb.StreamSubscribeResponse{Publication: pub})
+		pub := &pb.Publication{Data: []byte(`{"x": 1, "y": 2}`)}
 		stream.Send(&pb.StreamSubscribeResponse{Publication: pub})
 	}
 }

@@ -24,6 +24,7 @@
       const centrifugo_token_resp = ref(null)
       const curr_user_id = ref(null)
       const ws_incoming_msgs_list = ref([])
+      const ws_incoming_msgs_stream_list = ref([])
       const show_connected = ref(false)
 
       const centrifuge = ref(null)
@@ -55,9 +56,15 @@
         sub.value = centrifuge.value.newSubscription('space'); // so channel should named by space.uid or eny else specific thing
         namespace_sub.value = centrifuge.value.newSubscription('streams:space');
 
-        // React on channel real-time publications.
+        // React on space channel real-time publications.
         sub.value.on('publication', function(ctx) {
-            ws_incoming_msgs_list.value.push(ctx.data);
+          ws_incoming_msgs_list.value.push(ctx.data);
+            console.log(ctx.data);
+        });
+
+        // React on streams:space channel real-time publications.
+        namespace_sub.value.on('publication', function(ctx) {
+          ws_incoming_msgs_stream_list.value.push(ctx.data);
             console.log(ctx.data);
         });
 
@@ -94,6 +101,7 @@
         curr_user_id,
         show_connected,
         ws_incoming_msgs_list,
+        ws_incoming_msgs_stream_list,
         x_coord,
         y_coord,
         init_centrifugo_client,
@@ -144,6 +152,12 @@
         <p v-if="show_connected">Полученный пейлоад:</p>
         <ul v-if="ws_incoming_msgs_list">
           <li v-for="item in ws_incoming_msgs_list">
+            {{ item }}
+          </li>
+        </ul>
+        <p v-if="show_connected">Полученный пейлоад из стрима:</p>
+        <ul v-if="ws_incoming_msgs_stream_list">
+          <li v-for="item in ws_incoming_msgs_stream_list">
             {{ item }}
           </li>
         </ul>
