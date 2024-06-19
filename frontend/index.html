@@ -30,6 +30,9 @@
       const sub = ref(null)
       const namespace_sub = ref(null)
 
+      const x_coord = ref(2)
+      const y_coord = ref(3)
+
       async function get_centrifugo_token_resp() {
         const requestOptions = {
           method: "POST",
@@ -76,14 +79,27 @@
 
       }
 
+      async function publish_coords_from_client() {
+        namespace_sub.value.publish({"x": x_coord.value, "y": y_coord.value}).then(function() {
+              // success ack from Centrifugo received
+          }, function(err) {
+              // publish call failed with error
+              console.log(err);
+          });
+
+      }
+
       return {
         centrifugo_token_resp,
         curr_user_id,
         show_connected,
         ws_incoming_msgs_list,
+        x_coord,
+        y_coord,
         init_centrifugo_client,
         get_centrifugo_token_resp,
         publish_from_client,
+        publish_coords_from_client,
       }
     }
   }).mount('#app')
@@ -119,6 +135,11 @@
 
         <p><button @click="init_centrifugo_client">ЗАИНИТИТЬ ЦЕНТРИФУГО</button></p>
         <p v-if="show_connected"><button @click="publish_from_client">ОТПРАВИТЬ ПРИВЕТ С КЛИЕНТА</button></p>
+        <p v-if="show_connected">
+          x: <input v-model="x_coord" size="4"/>
+          y: <input v-model="y_coord" size="4"/>
+          <button @click="publish_coords_from_client">ОТПРАВИТЬ КООРДЫ</button>
+        </p>
         <p v-if="show_connected">заиничено с юзером "{{ curr_user_id }}"</p>
         <p v-if="show_connected">Полученный пейлоад:</p>
         <ul v-if="ws_incoming_msgs_list">

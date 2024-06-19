@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math"
 	"net"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -46,6 +48,15 @@ func (s *streamerServer) SubscribeUnidirectional(
 	return nil
 }
 
+func baseClient() *http.Client {
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+	}
+	return client
+}
+
+var client = baseClient()
+
 type clientData struct {
 	Input string `json:"input"`
 }
@@ -76,6 +87,22 @@ func (s *streamerServer) SubscribeBidirectional(
 		}
 		data := req.Publication.Data
 		fmt.Println("data from client", string(data))
+
+		// NOTE honestly we can send payload to centrifugo directly from here, no need step to app route at all
+		payload := []byte(fmt.Sprintf(`{"payload": %s}`, string(data)))
+		httpreq, err := http.NewRequest(http.MethodPost, "http://app:8081/from-streams/send/", bytes.NewReader(payload))
+		if err != nil {
+			return err
+		}
+		httpreq.Header.Add("Content-Type", "application/json")
+		httpresp, err := client.Do(httpreq)
+		if err != nil {
+			return err
+		}
+		if httpresp.StatusCode != http.StatusOK {
+			fmt.Println(httpresp.StatusCode)
+		}
+
 		var cd clientData
 		err = json.Unmarshal(data, &cd)
 		if err != nil {

@@ -32,7 +32,7 @@ class User(BaseModel):
     user_id: str
 
 @app.post("/centrifugo/subscribe/")
-def subscribe_item(user: User):
+def subscribe(user: User):
     hmac_secret = os.getenv("CENTRIFUGO_HMAC_SECRET")
 
     # NOTE sub is necessarily and stands for user_id/uid
@@ -54,7 +54,7 @@ def subscribe_item(user: User):
 # https://github.com/centrifugal/centrifuge-python/blob/master/example.py
 
 @app.post("/centrifugo/send-hello/")
-async def subscribe_item():
+async def send_hello():
     centrifugo_api_key = os.getenv("CENTRIFUGO_API_KEY")
     headers = {
         "Content-Type": "application/json",
@@ -80,7 +80,7 @@ class Message(BaseModel):
 
 
 @app.post("/centrifugo/send/")
-async def subscribe_item(message: Message):
+async def send_payload(message: Message):
     centrifugo_api_key = os.getenv("CENTRIFUGO_API_KEY")
     client = AsyncClient("http://centrifugo:8000/api", centrifugo_api_key)
     request = PublishRequest(channel="space", data=message.payload)
@@ -89,7 +89,26 @@ async def subscribe_item(message: Message):
 
 
 @app.post("/centrifugo/rpc/")
-async def subscribe_item():
+async def rpc_callback():
     # TODO centrifugo rpc callback route impl (not implemented now, backend streams service used for now)
     print('\n callback >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
     return {"status": "ok"}
+
+
+@app.post("/from-streams/send/")
+async def send_from_streams(message: Message):
+    print('\n POST /from-streams/send/ >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+    print(f"payload from streams: {message.payload}")
+    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n')
+
+    if message.payload.get("x"):
+        message.payload["x"] = message.payload["x"] * 2
+
+    if message.payload.get("y"):
+        message.payload["y"] = message.payload["y"] * 2
+
+    centrifugo_api_key = os.getenv("CENTRIFUGO_API_KEY")
+    client = AsyncClient("http://centrifugo:8000/api", centrifugo_api_key)
+    request = PublishRequest(channel="space", data=message.payload)
+    result = await client.publish(request)
+    return {"sent": "ok"}
